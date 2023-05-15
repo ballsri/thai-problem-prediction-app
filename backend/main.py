@@ -14,6 +14,9 @@ app = FastAPI()
 # database info
 DB_HOST = "localhost"
 DB_PORT = 5432
+DB_NAME = "traffy"
+DB_USER = "postgres"
+DB_PASSWORD = "P@ssw0rd"
 
 
 
@@ -65,21 +68,38 @@ consumer = KafkaConsumer(
     value_deserializer= lambda x: deserialize(t_output_schema, x)
 )
 
+
+
+# add data to db
+def add_data(tid, text, label):
+    conn = pg.connect(host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    cur = conn.cursor()
+    cur.execute("INSERT INTO problems (id,text, label) VALUES (%s,%s, %s)", (tid ,text, label))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+
 @app.get("/")
 def health_check():
     return {"status": "ok"}
 
 @app.post("/predict", response_model=PredictedText)
 def predictFromList(input_text: InputText):
-    tid = uuid.uuid4()
+    tid = str(uuid.uuid4())
     text = input_text.text
     # push the data to kafka topic
-    producer.send('traffy-input', value={'tid': str(tid), 'text': text})
+    producer.send('traffy-input', value={'tid': tid, 'text': text})
     # consume the data from kafka topic
     for msg in consumer:
-        if msg.value['tid'] == str(tid):
+        if msg.value['tid'] == tid:
             predicted = msg.value
             break
     print(predicted)
+
+    
+    # add data to db
+    add_data(tid,predicted['text'], predicted['label'])
     return PredictedText(text=predicted['text'], label=predicted['label'])
     
