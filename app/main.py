@@ -25,25 +25,29 @@ def main():
     schema_file = 'traffy_output.avsc'
     t_output_schema = avro.schema.parse(open(schema_file).read())
 
-
+    broker_url = 'localhost:9092'
     consumer = KafkaConsumer(
-        'traffy_input',
-        bootstrap_servers='localhost:9092',
+        'traffy-input',
+        bootstrap_servers=[broker_url],
         auto_offset_reset='earliest',
         enable_auto_commit=True,
         value_deserializer= lambda x: deserialize(t_input_schema, x)
     )
     producer = KafkaProducer(
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers=[broker_url],
         value_serializer=lambda x: serialize(t_output_schema, x)
     )
+
+    print("Model app is running...")
+    print('Start consuming messages...')
 
     for message in consumer:
         t_input = message.value
         predicted = predict([t_input['text']])
         t_output = {'tid': t_input['tid'], 'text':t_input['text'], 'label': predicted[1]}
-        producer.send('traffy_output', t_output)
+        producer.send('traffy-output', t_output)
 
 
-if __name__ == '__main__':
-    main()
+
+print('Starting model app...')
+main()

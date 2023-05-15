@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 import numpy as np
-from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForSequenceClassification
+from transformers import Trainer, AutoTokenizer, AutoModelForSequenceClassification
 
 
 label_df = pd.read_csv('./model/label_to_index.csv')
@@ -20,7 +20,8 @@ def collate_fn(batch):
 
 
 # Load the tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained("airesearch/wangchanberta-base-att-spm-uncased")
+cache_dir = "./model/cache"
+tokenizer = AutoTokenizer.from_pretrained("airesearch/wangchanberta-base-att-spm-uncased", cache_dir=cache_dir)
 model = AutoModelForSequenceClassification.from_pretrained("./model/model.pth", num_labels=len(label2idx))
 
 

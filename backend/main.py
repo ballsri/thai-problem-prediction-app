@@ -53,7 +53,7 @@ producer = KafkaProducer(
 
 # Create a Kafka consumer
 consumer = KafkaConsumer(
-    'traffy_output',
+    'traffy-output',
     bootstrap_servers=[broker_url],
     value_deserializer= lambda x: deserialize(t_output_schema, x)
 )
@@ -67,7 +67,7 @@ def predictFromList(input_text: InputText):
     tid = uuid.uuid4()
     text = input_text.text
     # push the data to kafka topic
-    producer.send('traffy_input', value={'tid': str(tid), 'text': text})
+    producer.send('traffy-input', value={'tid': str(tid), 'text': text})
     # consume the data from kafka topic
     for msg in consumer:
         if msg.value['tid'] == str(tid):

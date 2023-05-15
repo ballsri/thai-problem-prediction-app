@@ -1,15 +1,30 @@
 version: '3.7'
 
 services:
-  # api:
+  # model:
   #   build: ./app
-  #   container_name: api-model
+  #   container_name: model-app
+  #   depends_on:
+  #     - kafka
+
+
+  # backend:
+  #   build: ./backend
+  #   container_name: backend
+  #   ports:
+  #     - "8000:80"
+  #   depends_on:
+  #     - kafka
+
+
+
 
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: zookeeper
     ports:
       - "2181:2181"
+ 
   kafka:
     image: wurstmeister/kafka
     container_name: kafka
@@ -18,7 +33,7 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "traffy_input:1:1,traffy_output:1:1"
+      KAFKA_CREATE_TOPICS: "traffy-input:1:1,traffy-output:1:1"
       KAFKA_LOG_RETENTION_HOURS: 1
       KAFKA_LOG_RETENTION_BYTES: 1073741824
       KAFKA_LOG_SEGMENT_BYTES: 107374182
@@ -26,6 +41,7 @@ services:
       KAFKA_LOG_SEGMENT_DELETE_DELAY_MS: 1000
     depends_on:
       - "zookeeper"
+
 
 
   # db:
@@ -38,3 +54,4 @@ services:
   #     POSTGRES_PASSWORD: P@ssw0rd
   #     POSTGRES_DB: traffy
     
+

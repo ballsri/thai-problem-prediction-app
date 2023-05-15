@@ -5,7 +5,7 @@ import avro.io
 import io
 # Define Kafka broker connection properties
 broker_url = 'localhost:9092'
-topic_name = 'traffy_output'
+topic_name = 'traffy-output'
 schema_file = 'traffy_output.avsc'
 t_output_schema = avro.schema.parse(open(schema_file).read())
 
