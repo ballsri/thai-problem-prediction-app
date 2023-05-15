@@ -1,0 +1,10 @@
+{
+   "namespace": "assignment.avro",
+   "type": "record",
+   "name": "traffy_output",
+   "fields": [
+      {"name": "tid", "type": "string"},
+      {"name": "message", "type": "string"},
+      {"name": "label", "type": "string"}
+   ] 
+ }

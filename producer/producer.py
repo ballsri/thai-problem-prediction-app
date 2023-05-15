@@ -7,11 +7,27 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from datetime import datetime
 import pandas as pd
+import avro.schema
+import avro.io
+import io
 
 # Kafka producer
+
+
+schema_file = 'traffy_input.avsc'
+t_input_schema = avro.schema.parse(open(schema_file).read())
+
+def serialize(schema, obj):
+    bytes_writer = io.BytesIO()
+    encoder = avro.io.BinaryEncoder(bytes_writer)
+    writer = avro.io.DatumWriter(schema)
+    writer.write(obj, encoder)
+    return bytes_writer.getvalue()
+
+
 broker_url = 'localhost:9092'
 producer = KafkaProducer(bootstrap_servers=[broker_url],
-                        value_serializer=lambda x: json.dumps(x).encode('utf-8'),
+                        value_serializer=lambda x: serialize(t_input_schema, x)
     )
 
 # API url
@@ -25,7 +41,6 @@ query_params = {
 
 # produce data to kafka topic
 while True:
-    time.sleep(20)
     query_params['offset'] = str(offset)
     response = requests.get(url, params=query_params)
     data = response.json()
@@ -34,9 +49,10 @@ while True:
             'after_photo', 'address', 'timestamp', 'problem_type_abdul', 'star',
             'count_reopen', 'note', 'state', 'last_activity'], axis=1, inplace=True)
     for j in range(len(df)):
-        producer.send('traffy', value=df.values[j].tolist())
+        producer.send('traffy_input', value={"tid": df.values[j].tolist()[1], "message": df.values[j].tolist()[0]})
         print(df.values[j].tolist())
 
 
     producer.flush()
     offset += 10
+    time.sleep(20)
