@@ -3,12 +3,19 @@ from fastapi import FastAPI
 from pydantic import BaseModel,validator
 from fastapi.exceptions import HTTPException
 from kafka import KafkaProducer, KafkaConsumer
+import psycopg2 as pg
 import io
 import avro.io
 import avro.schema
 import uuid
 
 app = FastAPI()
+
+# database info
+DB_HOST = "localhost"
+DB_PORT = 5432
+
+
 
 class InputText(BaseModel):
     text: str

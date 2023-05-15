@@ -44,14 +44,12 @@ services:
 
 
 
-  # db:
-  #   image: postgres:12.1-alpine
-  #   container_name: db-traffy
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: P@ssw0rd
-  #     POSTGRES_DB: traffy
+  db:
+    build: ./db
+    container_name: db-traffy
+    ports:
+      - "5432:5432"
+
+
     
 
