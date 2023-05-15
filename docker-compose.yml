@@ -3,6 +3,7 @@ version: '3.7'
 services:
   # api:
   #   build: ./app
+  #   container_name: api-model
   #   ports:
   #     - "8000:80"
 
@@ -27,4 +28,15 @@ services:
       KAFKA_LOG_SEGMENT_DELETE_DELAY_MS: 1000
     depends_on:
       - "zookeeper"
+
+
+  db:
+    image: postgres:12.1-alpine
+    container_name: db-traffy
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: P@ssw0rd
+      POSTGRES_DB: traffy
     
