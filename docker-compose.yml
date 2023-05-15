@@ -1,0 +1,9 @@
+version: '1.0'
+
+services:
+  api:
+    build: ./app
+    ports:
+      - "8000:80"
+
+    
