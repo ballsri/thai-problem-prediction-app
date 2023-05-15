@@ -31,7 +31,7 @@ trainer = Trainer(
 
 
 def predict(input_texts):
-    label = [0 for i in range(len(input_texts))]
+    label = [0]
     input_texts_arr = np.array(input_texts).astype(str)
     encoded_input = tokenizer(input_texts_arr.tolist(), padding=True, truncation=True, max_length=128)
 
@@ -40,9 +40,4 @@ def predict(input_texts):
                                                   torch.tensor(label))
     
     predicted = trainer.predict(encoded_data)
-    pred_list = []
-    for i,pred in enumerate(predicted[0]) :
-        l_np = np.asarray(pred)
-        pred_list.append((input_texts[i],idx2label[l_np.argmax()]))
-    
-    return pred_list
+    return (input_texts[0],idx2label[predicted[0][0].argmax()])

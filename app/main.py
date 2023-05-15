@@ -6,25 +6,20 @@ from fastapi.exceptions import HTTPException
 app = FastAPI()
 
 class InputText(BaseModel):
-    texts: list
+    text: str
 
-    @validator('texts')
-    def check_texts(cls, v):
+    @validator('text')
+    def check_text(cls, v):
         if len(v) == 0:
             raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must not be empty"})
-        if type(v) is not list:
-            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must be list"})
-        if len(v) > 100:
-            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must not be more than 100"})
-        # check if each element is string
-        for text in v:
-            if type(text) is not str:
-                raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must be string"})
+        if type(v) is not str:
+            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must be string"})
         return v
 
 
 class PredictedText(BaseModel):
-    data: list
+    label: str
+    text: str
     
     
 
@@ -34,6 +29,6 @@ def health_check():
 
 @app.post("/predict", response_model=PredictedText)
 def predictFromList(input_text: InputText):
-    predicted = predict(input_text.texts)
-    return PredictedText(data=predicted)
+    predicted = predict([input_text.text])
+    return PredictedText(text=predicted[0], label=predicted[1])
     
