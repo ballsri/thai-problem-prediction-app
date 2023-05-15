@@ -1,5 +1,5 @@
 # This app is a backend which will push the data to kafka topic.
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from pydantic import BaseModel,validator
 from fastapi.exceptions import HTTPException
 from kafka import KafkaProducer, KafkaConsumer
@@ -35,6 +35,16 @@ class InputText(BaseModel):
 class PredictedText(BaseModel):
     label: str
     text: str
+    
+
+class PredictedTexts(BaseModel):
+    texts: list[PredictedText]
+
+    @validator('texts')
+    def check_texts(cls, v):
+        if type(v) is not list:
+            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must be list"})
+        return v
 
 def serialize(schema, obj):
     bytes_writer = io.BytesIO()
@@ -79,14 +89,23 @@ def add_data(tid, text, label):
     cur.close()
     conn.close()
 
+# Create web socket connection
 
+# WebSocket endpoint
+@app.websocket("/traffy")
+async def broadcast(message: PredictedText):
+    for websocket in app.state.websockets:
+        try:
+            await websocket.send_text(message)
+        except:
+            app.state.websockets.remove(websocket)
 
 @app.get("/")
 def health_check():
     return {"status": "ok"}
 
 @app.post("/predict", response_model=PredictedText)
-def predictFromList(input_text: InputText):
+async def predictFromStr(input_text: InputText):
     tid = str(uuid.uuid4())
     text = input_text.text
     # push the data to kafka topic
@@ -98,8 +117,33 @@ def predictFromList(input_text: InputText):
             break
     print(predicted)
 
+    await broadcast(predicted)
+
     
     # add data to db
     add_data(tid,predicted['text'], predicted['label'])
     return PredictedText(text=predicted['text'], label=predicted['label'])
+
+@app.get("/predicts", response_model=PredictedTexts)
+def predictFromList():
+    # get data from db
+    conn = pg.connect(host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM problems")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    print(rows)
+    return PredictedTexts(texts=[PredictedText(text=row[1], label=row[2]) for row in rows])
+
+
+
     
+@app.on_event("startup")
+async def startup():
+    app.state.websockets = set()
+
+@app.on_event("shutdown")
+async def shutdown():
+    for websocket in app.state.websockets:
+        await websocket.close()
