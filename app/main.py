@@ -40,8 +40,8 @@ def main():
 
     for message in consumer:
         t_input = message.value
-        predicted = predict([t_input['message']])
-        t_output = {'tid': t_input['tid'], 'message':t_input['message'], 'label': predicted[1]}
+        predicted = predict([t_input['text']])
+        t_output = {'tid': t_input['tid'], 'text':t_input['text'], 'label': predicted[1]}
         producer.send('traffy_output', t_output)
 
 

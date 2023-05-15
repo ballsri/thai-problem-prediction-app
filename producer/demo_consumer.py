@@ -5,8 +5,8 @@ import avro.io
 import io
 # Define Kafka broker connection properties
 broker_url = 'localhost:9092'
-topic_name = 'traffy_input'
-schema_file = 'traffy_input.avsc'
+topic_name = 'traffy_output'
+schema_file = 'traffy_output.avsc'
 t_output_schema = avro.schema.parse(open(schema_file).read())
 
 def deserialize(schema, raw_bytes):

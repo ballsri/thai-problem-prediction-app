@@ -4,6 +4,6 @@
    "name": "traffy_input",
    "fields": [
       {"name": "tid", "type": "string"},
-      {"name": "message", "type": "string"}
+      {"name": "text", "type": "string"}
    ] 
  }

@@ -49,7 +49,7 @@ while True:
             'after_photo', 'address', 'timestamp', 'problem_type_abdul', 'star',
             'count_reopen', 'note', 'state', 'last_activity'], axis=1, inplace=True)
     for j in range(len(df)):
-        producer.send('traffy_input', value={"tid": df.values[j].tolist()[1], "message": df.values[j].tolist()[0]})
+        producer.send('traffy_input', value={"tid": df.values[j].tolist()[1], "text": df.values[j].tolist()[0]})
         print(df.values[j].tolist())
 
 
