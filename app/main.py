@@ -1,34 +1,49 @@
-from fastapi import FastAPI
-from pydantic import BaseModel,validator
+# This app is a model to be consume kafka message and predict the label of the message.
+# Then it will send the predicted label to kafka topic.
 from model.model import predict
-from fastapi.exceptions import HTTPException
+from kafka import KafkaConsumer, KafkaProducer
+import io
+import avro.io
+import avro.schema
 
-app = FastAPI()
+def serialize(schema, obj):
+    bytes_writer = io.BytesIO()
+    encoder = avro.io.BinaryEncoder(bytes_writer)
+    writer = avro.io.DatumWriter(schema)
+    writer.write(obj, encoder)
+    return bytes_writer.getvalue()
 
-class InputText(BaseModel):
-    text: str
+def deserialize(schema, raw_bytes):
+    bytes_reader = io.BytesIO(raw_bytes)
+    decoder = avro.io.BinaryDecoder(bytes_reader)
+    reader = avro.io.DatumReader(schema)
+    return reader.read(decoder)
 
-    @validator('text')
-    def check_text(cls, v):
-        if len(v) == 0:
-            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must not be empty"})
-        if type(v) is not str:
-            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"texts must be string"})
-        return v
+def main():
+    schema_file = 'traffy_input.avsc'
+    t_input_schema = avro.schema.parse(open(schema_file).read())
+    schema_file = 'traffy_output.avsc'
+    t_output_schema = avro.schema.parse(open(schema_file).read())
 
 
-class PredictedText(BaseModel):
-    label: str
-    text: str
-    
-    
+    consumer = KafkaConsumer(
+        'traffy_input',
+        bootstrap_servers='localhost:9092',
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        value_deserializer= lambda x: deserialize(t_input_schema, x)
+    )
+    producer = KafkaProducer(
+        bootstrap_servers='localhost:9092',
+        value_serializer=lambda x: serialize(t_output_schema, x)
+    )
 
-@app.get("/")
-def health_check():
-    return {"status": "ok"}
+    for message in consumer:
+        t_input = message.value
+        predicted = predict([t_input['message']])
+        t_output = {'tid': t_input['tid'], 'message':t_input['message'], 'label': predicted[1]}
+        producer.send('traffy_output', t_output)
 
-@app.post("/predict", response_model=PredictedText)
-def predictFromList(input_text: InputText):
-    predicted = predict([input_text.text])
-    return PredictedText(text=predicted[0], label=predicted[1])
-    
+
+if __name__ == '__main__':
+    main()

@@ -1,17 +1,20 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
+FROM python:3.9-slim-buster
 
-
+WORKDIR /app
 # Path: requirements.txt
-COPY requirements.txt /app/requirements.txt
+COPY requirements.txt requirements.txt
 
 # pip install tourch
 RUN pip install --no-cache-dir torch==1.9.0+cpu torchvision==0.10.0+cpu torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 # COPY CSV
-COPY ./model/label_to_index.csv /app/model/label_to_index.csv
+COPY ./model/label_to_index.csv /model/label_to_index.csv
 
 
 # Path: ./
-COPY . /app
+COPY . .
+
+CMD ["python", "main.py"]
+
