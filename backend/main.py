@@ -1,8 +1,9 @@
 # This app is a backend which will push the data to kafka topic.
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from pydantic import BaseModel,validator
 from fastapi.exceptions import HTTPException
 from kafka import KafkaProducer, KafkaConsumer
+from fastapi.middleware.cors import CORSMiddleware
 import psycopg2 as pg
 import io
 import avro.io
@@ -33,12 +34,14 @@ class InputText(BaseModel):
 
 
 class PredictedText(BaseModel):
-    label: str
+    success: bool = True
+    label: str = ''
     text: str
     
 
 class PredictedTexts(BaseModel):
-    texts: list[PredictedText]
+    success: bool = True
+    texts: list[str]
 
     @validator('texts')
     def check_texts(cls, v):
@@ -93,10 +96,23 @@ def add_data(tid, text, label):
 
 # WebSocket endpoint
 @app.websocket("/traffy")
-async def broadcast(message: PredictedText):
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    app.state.websockets.add(websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            print("recieve #################",data)
+            await broadcast(data)
+    except:
+        app.state.websockets.remove(websocket)
+
+async def broadcast(message: dict):
+    print("broadcasting", message)
     for websocket in app.state.websockets:
         try:
-            await websocket.send_text(message)
+            print("Broadcasting ",message)
+            await websocket.send_json(message)
         except:
             app.state.websockets.remove(websocket)
 
@@ -106,20 +122,29 @@ def health_check():
 
 @app.post("/predict", response_model=PredictedText)
 async def predictFromStr(input_text: InputText):
+    print(input_text)
     tid = str(uuid.uuid4())
     text = input_text.text
+
+
+
+    # set time out for producer
     # push the data to kafka topic
     producer.send('traffy-input', value={'tid': tid, 'text': text})
+    producer.flush()
+    # set time out for consumer
+    consumer.poll(timeout_ms=30000)
+    consumer.seek_to_beginning()
     # consume the data from kafka topic
     for msg in consumer:
         if msg.value['tid'] == tid:
             predicted = msg.value
             break
     print(predicted)
+    # return if consumer time out
+    if predicted['label'] == '':
 
-    await broadcast(predicted)
-
-    
+        return PredictedText(sucess=False,text='request time out', label='') 
     # add data to db
     add_data(tid,predicted['text'], predicted['label'])
     return PredictedText(text=predicted['text'], label=predicted['label'])
@@ -129,12 +154,15 @@ def predictFromList():
     # get data from db
     conn = pg.connect(host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
     cur = conn.cursor()
-    cur.execute("SELECT * FROM problems")
+    cur.execute("SELECT * FROM problems ")
     rows = cur.fetchall()
     cur.close()
     conn.close()
     print(rows)
-    return PredictedTexts(texts=[PredictedText(text=row[1], label=row[2]) for row in rows])
+    rows.reverse()
+    # return only text + : +  label
+
+    return PredictedTexts(texts=[row[1] + "  :  " + row[2] for row in rows])
 
 
 
@@ -147,3 +175,15 @@ async def startup():
 async def shutdown():
     for websocket in app.state.websockets:
         await websocket.close()
+
+
+# allow CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+

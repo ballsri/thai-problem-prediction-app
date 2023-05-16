@@ -40,12 +40,18 @@ def main():
 
     print("Model app is running...")
     print('Start consuming messages...')
+    while True:
+        for message in consumer:
 
-    for message in consumer:
-        t_input = message.value
-        predicted = predict([t_input['text']])
-        t_output = {'tid': t_input['tid'], 'text':t_input['text'], 'label': predicted[1]}
-        producer.send('traffy-output', t_output)
+            print('Consumed message: ' + str(message.value))
+
+            t_input = message.value
+            predicted = predict([t_input['text']])
+            t_output = {'tid': t_input['tid'], 'text':t_input['text'], 'label': predicted[1]}
+            producer.send('traffy-output', t_output)
+            producer.flush()
+            print('Produced message: ' + str(t_output))
+
 
 
 
