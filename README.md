@@ -7,3 +7,18 @@ It uses __Wangchan berta's model__ to classify text into problem's topic in Thai
 - Run the docker-compose file by using
   - docker-compose up -d
 - The server is started on port 8000
+
+
+Usage :
+- ลง dependencies
+  - app : pip install requirements.txt
+  - backend : pip install requiremensts.txt
+  - frontend : npm i
+
+- run server
+  - docker-compose up -d
+  - app : python ปกติ
+  - backend: uvicorn main:app
+  - frontend: npm run serve
+
+เข้า web localhost:8000
