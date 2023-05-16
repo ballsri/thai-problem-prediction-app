@@ -3,8 +3,8 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "input slider1"
-    "result slider2";
+    "input slider"
+    "result slider";
   height: 100vh;
   overflow: hidden;
 }
@@ -55,17 +55,11 @@
   font-weight: bold;
   color: #7d62ff;
 }
-.slider-container1 {
-  grid-area: slider1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
 
 
-.slider-container2 {
-  grid-area: slider2;
+
+.slider-container {
+  grid-area: slider;
   display: flex;
   flex-direction: column;
   overflow: hidden;

@@ -1,5 +1,5 @@
 # This app is a backend which will push the data to kafka topic.
-from fastapi import FastAPI, WebSocket, Request, BackgroundTasks
+from fastapi import FastAPI, WebSocket, BackgroundTasks
 from pydantic import BaseModel,validator
 from fastapi.exceptions import HTTPException
 from kafka import KafkaProducer, KafkaConsumer
@@ -10,7 +10,7 @@ import avro.io
 import avro.schema
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
-import atexit
+
 
 
 app = FastAPI()
@@ -177,7 +177,7 @@ async def predictFromStr(input_text: InputText, background_tasks: BackgroundTask
     return {"success": True, "message" : "ระบบกำลังทำนาย"}
 
 @app.get("/predicts", response_model=PredictedTexts)
-def predictFromList():
+def getDbTexts():
     # get data from db
     conn = pg.connect(host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
     cur = conn.cursor()
@@ -191,6 +191,7 @@ def predictFromList():
 
     return PredictedTexts(texts=[row[1] + "  :  " + row[2] for row in rows])
 
+            
 
 @app.on_event("startup")
 async def startup():

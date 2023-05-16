@@ -12,21 +12,14 @@
         </div>
       </div>
     </div>
-    <div class="slider-container1">
-        <div class="topics">
-          <span class="topic">{{ topic1 }}</span>
-        </div>
-        <div class="slider">
-          <div v-for="(report, index) in reports" :key="index" class="report">{{ report }}
-          </div>
-        </div>
-      </div>
-    <div class="slider-container2" >
+
+    <div class="slider-container">
       <div class="topics">
-        <span class="topic">{{ topic2 }}</span>
+        <span class="topic">{{ topic }}</span>
       </div>
-      <div class="slider" @click="clearUnread">
-        <div  v-for="(report, index) in cur_reports"  :key="index" :id="index" :class="['report',{'unread':isUnread[index]}]">{{ report }}
+      <div id="slider" class="slider" @click="clearUnread">
+        <div v-for="(report, index) in cur_reports" :key="index" :id="index"
+          :class="['report', { 'unread': isUnread[index] }]">{{ report }}
         </div>
       </div>
     </div>
@@ -47,8 +40,7 @@ export default {
       inputValue: "",
       result: "",
       activeIndex: 1,
-      topic1: "ปัญหาที่มีคนเคยถาม",
-      topic2: "ปัญหาที่กำลังถูกถาม",
+      topic: "ปัญหาที่กำลังถูกถาม",
       cur_reports: [
       ],
       socket: null,
@@ -68,6 +60,7 @@ export default {
           document.getElementById(i).classList.add("unread");
         }
       }
+      
     },
   },
 
@@ -96,14 +89,14 @@ export default {
         .catch((err) => {
           console.log(err);
           this.cur_reports = [];
-          
+
         });
 
     },
 
 
     connectToWebSocket() {
-      this.socket = new WebSocket("ws://"+ url + "/traffy");
+      this.socket = new WebSocket("ws://" + url + "/traffy");
 
       // receive json from websocket
       this.socket.onmessage = (event) => {
@@ -156,7 +149,7 @@ export default {
           this.result = "ไม่สามารถทำนายได้";
         });
 
-    
+
 
     },
 
