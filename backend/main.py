@@ -174,7 +174,7 @@ async def predictFromStr(input_text: InputText, background_tasks: BackgroundTask
 
     background_tasks.add_task(sendToPredict,tid, text)
 
-    return {"success": True, "message" : "request is being processed"}
+    return {"success": True, "message" : "ระบบกำลังทำนาย"}
 
 @app.get("/predicts", response_model=PredictedTexts)
 def predictFromList():

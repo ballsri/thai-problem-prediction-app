@@ -111,7 +111,7 @@ export default {
         console.log(data);
         if (data.tid === this.latest_sent_tid) {
           this.isLoading = false;
-          this.result = "Text has processed successfully";
+          this.result = "ระบบทำนายสำเร็จ";
         }
         this.cur_reports.unshift(data.result);
         this.isUnread.unshift(true);
