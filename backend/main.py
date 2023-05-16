@@ -1,5 +1,5 @@
 # This app is a backend which will push the data to kafka topic.
-from fastapi import FastAPI, WebSocket, Request
+from fastapi import FastAPI, WebSocket, Request, BackgroundTasks
 from pydantic import BaseModel,validator
 from fastapi.exceptions import HTTPException
 from kafka import KafkaProducer, KafkaConsumer
@@ -9,6 +9,9 @@ import io
 import avro.io
 import avro.schema
 import uuid
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+
 
 app = FastAPI()
 
@@ -22,7 +25,23 @@ DB_PASSWORD = "P@ssw0rd"
 
 
 class InputText(BaseModel):
+    tid: str
     text: str
+
+    @validator('tid')
+    def check_tid(cls, v):
+        if len(v) == 0:
+            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"tid must not be empty"})
+        if type(v) is not str:
+            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"tid must be string"})
+        try:
+        # Attempt to parse the UUID string
+            uuid_obj = uuid.UUID(v)
+            return v
+        except ValueError:
+            raise HTTPException(status_code=400,detail={'status': "Bad request",'message':"tid must be uuid"})
+      
+
 
     @validator('text')
     def check_text(cls, v):
@@ -78,7 +97,8 @@ producer = KafkaProducer(
 consumer = KafkaConsumer(
     'traffy-output',
     bootstrap_servers=[broker_url],
-    value_deserializer= lambda x: deserialize(t_output_schema, x)
+    value_deserializer= lambda x: deserialize(t_output_schema, x),
+    group_id='1'
 )
 
 
@@ -94,46 +114,36 @@ def add_data(tid, text, label):
 
 # Create web socket connection
 
+websocket_clients = []
 # WebSocket endpoint
 @app.websocket("/traffy")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    app.state.websockets.add(websocket)
+    websocket_clients.append(websocket)
     try:
         while True:
             data = await websocket.receive_json()
             print("recieve #################",data)
             await broadcast(data)
     except:
-        app.state.websockets.remove(websocket)
+        websocket_clients.remove(websocket)
 
 async def broadcast(message: dict):
     print("broadcasting", message)
-    for websocket in app.state.websockets:
+    for websocket in websocket_clients:
         try:
             print("Broadcasting ",message)
             await websocket.send_json(message)
         except:
-            app.state.websockets.remove(websocket)
+            websocket_clients.remove(websocket)
 
-@app.get("/")
-def health_check():
-    return {"status": "ok"}
-
-@app.post("/predict", response_model=PredictedText)
-async def predictFromStr(input_text: InputText):
-    print(input_text)
-    tid = str(uuid.uuid4())
-    text = input_text.text
-
-
-
+async def sendToPredict(tid, text):
     # set time out for producer
     # push the data to kafka topic
     producer.send('traffy-input', value={'tid': tid, 'text': text})
     producer.flush()
     # set time out for consumer
-    consumer.poll(timeout_ms=30000)
+    consumer.poll(timeout_ms=3000)
     consumer.seek_to_beginning()
     # consume the data from kafka topic
     for msg in consumer:
@@ -147,7 +157,24 @@ async def predictFromStr(input_text: InputText):
         return PredictedText(sucess=False,text='request time out', label='') 
     # add data to db
     add_data(tid,predicted['text'], predicted['label'])
-    return PredictedText(text=predicted['text'], label=predicted['label'])
+    data = PredictedText(text=predicted['text'], label=predicted['label'])
+    await broadcast( {"success" : True, "tid": tid,"result": data.text + "  :  " + data.label})
+
+    return data
+
+@app.get("/")
+def health_check():
+    return {"status": "ok"}
+
+@app.post("/predict")
+async def predictFromStr(input_text: InputText, background_tasks: BackgroundTasks):
+    print(input_text)
+    tid = input_text.tid
+    text = input_text.text
+
+    background_tasks.add_task(sendToPredict,tid, text)
+
+    return {"success": True, "message" : "request is being processed"}
 
 @app.get("/predicts", response_model=PredictedTexts)
 def predictFromList():
@@ -165,8 +192,6 @@ def predictFromList():
     return PredictedTexts(texts=[row[1] + "  :  " + row[2] for row in rows])
 
 
-
-    
 @app.on_event("startup")
 async def startup():
     app.state.websockets = set()
@@ -185,5 +210,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+
+# create cron job to sent request to web 
+# then get the response's data and sent to kafka topic
+# then get the response from kafka topic and add to db
+# then sent the response to web socket
+# Run every 1 minute
+
 
 

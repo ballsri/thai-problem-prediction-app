@@ -12,12 +12,21 @@
         </div>
       </div>
     </div>
-    <div class="slider-container">
+    <div class="slider-container1">
+        <div class="topics">
+          <span class="topic">{{ topic1 }}</span>
+        </div>
+        <div class="slider">
+          <div v-for="(report, index) in reports" :key="index" class="report">{{ report }}
+          </div>
+        </div>
+      </div>
+    <div class="slider-container2">
       <div class="topics">
-        <span class="topic">{{ topic }}</span>
+        <span class="topic">{{ topic2 }}</span>
       </div>
       <div class="slider">
-        <div v-for="(report, index) in reports" :key="index" class="report">{{ report }}
+        <div v-for="(report, index) in cur_reports" :key="index" class="report">{{ report }}
         </div>
       </div>
     </div>
@@ -29,6 +38,7 @@
 </style>
 
 <script>
+import { v4 as uuidv4 } from "uuid";
 const url = "localhost:8000";
 
 export default {
@@ -37,11 +47,13 @@ export default {
       inputValue: "",
       result: "",
       activeIndex: 1,
-      topic: "ปัญหาที่มีคนเคยถาม",
-      reports: [
+      topic1: "ปัญหาที่มีคนเคยถาม",
+      topic2: "ปัญหาที่กำลังถูกถาม",
+      cur_reports: [
       ],
       socket: null,
       isLoading: false,
+      latest_sent_tid: null,
     };
   },
   mounted() {
@@ -68,11 +80,11 @@ export default {
         })
         .then((data) => {
           console.log(data);
-          this.reports = data.texts;
+          this.cur_reports = data.texts;
         })
         .catch((err) => {
           console.log(err);
-          this.reports = [];
+          this.cur_reports = [];
           
         });
 
@@ -86,7 +98,13 @@ export default {
       this.socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log(data);
-        this.reports.unshift(data.result);
+        if (data.tid === this.latest_sent_tid) {
+          this.isLoading = false;
+          this.result = "Text has processed successfully";
+          this.cur_reports.unshift(data.result);
+          return;
+        }
+        this.cur_reports.unshift(data.result);
       };
 
 
@@ -100,12 +118,14 @@ export default {
       // fetch to backend
       this.result = "";
       this.isLoading = true;
+      this.latest_sent_tid = uuidv4();
       await fetch("http://" + url + "/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          tid: this.latest_sent_tid,
           text: this.inputValue,
         }),
       })
@@ -118,8 +138,7 @@ export default {
         })
         .then((data) => {
           console.log(data);
-          this.isLoading = false;
-          this.result = data.text + " : " + data.label;
+          this.inputValue = "";
         })
         .catch((err) => {
           console.log(err);
@@ -127,12 +146,7 @@ export default {
           this.result = "ไม่สามารถทำนายได้";
         });
 
-      // send to websocket
-      this.socket.send(
-        JSON.stringify({
-          result: this.result,
-        })
-      );
+    
 
     },
 

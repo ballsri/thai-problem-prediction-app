@@ -1,10 +1,10 @@
 .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 50px 1fr;
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "input topics"
-    "result slider";
+    "input slider1"
+    "result slider2";
   height: 100vh;
   overflow: hidden;
 }
@@ -55,9 +55,17 @@
   font-weight: bold;
   color: #7d62ff;
 }
+.slider-container1 {
+  grid-area: slider1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
 
-.slider-container {
-  grid-area: slider;
+
+.slider-container2 {
+  grid-area: slider2;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -80,7 +88,7 @@
 }
 
 .topic {
-  cursor: pointer;
+
   transition: all 0.2s ease-in-out;
 }
 
