@@ -21,12 +21,12 @@
           </div>
         </div>
       </div>
-    <div class="slider-container2">
+    <div class="slider-container2" >
       <div class="topics">
         <span class="topic">{{ topic2 }}</span>
       </div>
-      <div class="slider">
-        <div v-for="(report, index) in cur_reports" :key="index" class="report">{{ report }}
+      <div class="slider" @click="clearUnread">
+        <div  v-for="(report, index) in cur_reports"  :key="index" :id="index" :class="['report',{'unread':isUnread[index]}]">{{ report }}
         </div>
       </div>
     </div>
@@ -54,11 +54,21 @@ export default {
       socket: null,
       isLoading: false,
       latest_sent_tid: null,
+      isUnread: [],
     };
   },
   mounted() {
     this.connectToWebSocket();
     this.fetchReport();
+  },
+  watch: {
+    cur_reports: function (val) {
+      for (let i = 0; i < val.length; i++) {
+        if (this.isUnread[i]) {
+          document.getElementById(i).classList.add("unread");
+        }
+      }
+    },
   },
 
   methods: {
@@ -81,6 +91,7 @@ export default {
         .then((data) => {
           console.log(data);
           this.cur_reports = data.texts;
+          this.isUnread = Array(this.cur_reports.length).fill(false);
         })
         .catch((err) => {
           console.log(err);
@@ -101,10 +112,9 @@ export default {
         if (data.tid === this.latest_sent_tid) {
           this.isLoading = false;
           this.result = "Text has processed successfully";
-          this.cur_reports.unshift(data.result);
-          return;
         }
         this.cur_reports.unshift(data.result);
+        this.isUnread.unshift(true);
       };
 
 
@@ -148,6 +158,12 @@ export default {
 
     
 
+    },
+
+    clearUnread() {
+      for (let i = 0; i < this.isUnread.length; i++) {
+        this.isUnread[i] = false;
+      }
     },
 
 
