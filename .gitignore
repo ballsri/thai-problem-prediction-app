@@ -1,0 +1,4 @@
+model-with-api/model/model.pth/
+app/models/model.pth/
+__pycache__/
+cache/
