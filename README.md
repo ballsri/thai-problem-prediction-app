@@ -10,20 +10,20 @@ It uses __Wangchan berta's model__ to classify text into problem's topic in Thai
 
 
 Meaning :
-- app : ML model which consume message from kafka to compute then it push the result back to kafka
-- backend : web api to recieve text form frontend then push text to kafka after that it consume result from kafka then publish text via websocket
-- frontend : web page to recieve text input from user and display the result from backend via websocket
-- model-with-api : simple ML model with api
-- db : simple postgres dockerfile
-- demo_porducer : api call and kafka push testing
+- __app__ : ML model which consume message from kafka to compute then it push the result back to kafka
+- __backend__ : web api to recieve text form frontend then push text to kafka after that it consume result from kafka then publish text via websocket
+- __frontend__ : web page to recieve text input from user and display the result from backend via websocket
+- __model-with-api__ : simple ML model with api
+- __db__ : simple postgres dockerfile
+- __demo_producer___ : api call and kafka push testing
 
 Usage :
-- ลง dependencies
+- __ลง dependencies__
   - app : pip install requirements.txt
   - backend : pip install requiremensts.txt
   - frontend : npm i
 
-- run server
+- __run server__
   - docker-compose up -d
   - app : python ปกติ
   - backend: uvicorn main:app
